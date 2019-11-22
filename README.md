@@ -1,10 +1,10 @@
 # scrna-cell-cycle
-Bioinformatic project course 2018.
+Bioinformatic project course 2019.
 
 Client: Johan Reimegård
 
 Supervisor: Lisa Klasson
 
-Students: Erik Hedman, Lovisa Lundberg, Hugo Swenson.
+Students: Anna Asklöf and Linnea Eriksson
 
 
