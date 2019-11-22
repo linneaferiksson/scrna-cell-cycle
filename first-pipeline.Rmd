@@ -1,0 +1,132 @@
+---
+title: "scrna-cell-cyle 2019"
+author: "Linnea Eriksson"
+date: "11/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Read in the data file 
+```{r readFeatures}
+
+library(dplyr)
+library(Seurat)
+
+# Load the PBMC dataset
+#feature_counts.data <- read.table("/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/feature_counts.table.tsv")
+
+feature_counts.data <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/feature_counts.table.tsv",
+          sep = "\t",
+          header = TRUE,
+          quote = "",
+          stringsAsFactors = FALSE)
+
+dim(x=feature_counts.data)
+head(x = rownames(x = feature_counts.data))
+head(x = colnames(x = feature_counts.data))
+
+#feature_counts.data
+rownames(x = feature_counts.data) =  feature_counts.data$Geneid 
+nrow(feature_counts.data)
+ncol(feature_counts.data)
+
+
+#summary_feat_count <- summary(feature_counts.data)
+#summary_feat_count
+
+#feature_counts_seurat[["percent.mt"]] <- PercentageFeatureSet(object = feature_counts_seurat, pattern = "^MT-", col.name = "Chr")
+
+
+
+```
+
+## Preprocessing of the Seurat object
+
+``` {r preprocessingSeurat}
+
+feature_counts.data =feature_counts.data[,-1:-6]
+
+#Remove all non-SC-columns
+removeIDs <- function(feature_counts.data) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(feature_counts.data)) {
+    if(grepl(".dil.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+    if(grepl(".FACS.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- feature_counts.data[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+ feature_counts_onlySC <- removeIDs(feature_counts.data)
+ dim(feature_counts_onlySC)
+
+ keep <- rowSums(feature_counts_onlySC>1)
+ noEmptyRowSums <- feature_counts_onlySC[keep,]
+ dim(noEmptyRowSums)
+ 
+```
+
+## Create Seurat object and normalize
+``` {r normalizeFeatureData}
+#Create a Seurat object out of the table
+feature_counts_seurat <- CreateSeuratObject(counts = noEmptyRowSums)
+feature_counts_seurat
+
+feature_counts_seurat <- NormalizeData(feature_counts_seurat)
+feature_counts_seurat <- ScaleData(feature_counts_seurat)
+
+```
+
+## Feature selection
+
+``` {r FeatureSelection}
+
+seuratdata <- FindVariableFeatures(object = feature_counts_seurat, mean.function = ExpMean, dispersion.function = LogVMR, x.low.cutoff = 0.2, x.high.cutoff = 10, y.cutoff = 0.5 )
+
+
+#run PCA
+
+seuratdata_pca <- RunPCA(object = seuratdata, pc.genes = seuratdata@var.genes, do.print = FALSE)
+
+table(seuratdata_pca@meta.data$phase)
+  
+#varFeatures <- FindVariableFeatures(feature_counts_seurat, selection.method = "vst")
+#varFeatures
+
+# Identify the 10 most highly variable genes
+#top10 <- head(VariableFeatures(varFeatures), 10)
+#top10
+
+# plot variable features with and without labels
+#plot1 <- VariableFeaturePlot(varFeatures)
+#plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+#CombinePlots(plots = list(plot1, plot2))
+
+#all.genes <- rownames(pbmc)
+#pbmc <- ScaleData(pbmc, features = all.genes)
+
+```
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+#plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
