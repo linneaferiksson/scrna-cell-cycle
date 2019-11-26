@@ -1,0 +1,148 @@
+---
+title: "Seurat_protocol_2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load library
+
+```{r library}
+library(dplyr)
+library(Seurat)
+# load data from Seurat package
+#data(cc.genes)
+
+# segregate this list into markers of G2/M phase and markers of S phase
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+```
+
+## Load the dataset
+
+```{r load}
+feature_counts.data <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/feature_counts.table.tsv", 
+                                  sep = "\t",
+                                  header = TRUE,
+                                  quote = "",
+                                  stringsAsFactors = FALSE)
+dim(x=feature_counts.data)
+head(x = colnames(x = feature_counts.data))
+```
+
+## Remove data that is not sc from dataset
+
+```{r sc}
+removeIDs <- function(feature_counts.data) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(feature_counts.data)) {
+    if(grepl(".dil.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+    if(grepl(".FACS.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- feature_counts.data[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+feature_counts_SC <- removeIDs(feature_counts.data)
+dim(feature_counts_SC)
+head(x = colnames(x = feature_counts_SC))
+
+```
+
+## Remove columns that are not of interest from dataset
+
+```{r removeColumns}
+feature_counts_SC= feature_counts_SC[,-2:-6]
+dim(feature_counts_SC)
+head(x = colnames(x = feature_counts_SC))
+```
+
+## Load file for correct gene names
+
+```{r load2}
+geneInfoFile <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/geneInfo.QC.method.seurat.SCORPIUS.tsv", 
+                           sep = "\t",
+                           header = TRUE,
+                           quote = "",
+                           stringsAsFactors = FALSE)
+
+dim(x=geneInfoFile)
+```
+
+## Select relevant columns
+
+```{r select}
+geneInfoNames = geneInfoFile %>%  select(external_gene_name,Chr)
+head(geneInfoNames)
+dim(x=geneInfoNames)
+
+```
+
+## Remove Chr with NA
+
+```{r NA}
+geneInfoNames = geneInfoNames[-52747:-58303,]
+head(geneInfoNames)
+dim(geneInfoNames)
+
+```
+
+## Perform inner join 
+
+```{r innerJoin}
+geneInfo = inner_join(geneInfoNames, feature_counts_SC, by = c("external_gene_name" = "Geneid"))
+dim(x=geneInfo)
+```
+
+## Set rownames to correct gene names
+
+```{r rownames}
+rownames(geneInfo) =  make.names(geneInfo$Chr, unique =TRUE)
+dim(x=geneInfo)
+head(x = colnames(x = geneInfo))
+```
+
+## Remove columns in order to perform rowSums
+
+```{r removeColumns2}
+geneInfo= geneInfo[,-1:-2]
+dim(geneInfo)
+head(x = colnames(x = geneInfo))
+```
+
+## Remove genes that are not expressed
+
+```{r expressed}
+#rowSums(geneInfo)
+keep <- rowSums(geneInfo>1)
+geneInfo <- geneInfo[keep,]
+dim(geneInfo)
+```
+
+## Create a Seurat object out of the table
+
+```{r Seurat}
+feature_counts_seurat <- CreateSeuratObject(counts = geneInfo, min.cells = 3)
+feature_counts_seurat
+feature_counts_seurat <- NormalizeData(object = feature_counts_seurat)
+feature_counts_seurat <- FindVariableFeatures(object = feature_counts_seurat, selection.method = "vst", mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+feature_counts_seurat <- ScaleData(feature_counts_seurat, features = rownames(feature_counts_seurat))
+feature_counts_seurat <- RunPCA(object = feature_counts_seurat, pc.genes = feature_counts_seurat@var.genes, do.print = FALSE)
+feature_counts_seurat
+DimHeatmap(feature_counts_seurat)
+```
+
+## Assign cell-cycle scores
+```{r Scoring}
+#feature_counts_seurat <- CellCycleScoring(object = feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes)
+```
