@@ -1,6 +1,8 @@
 ---
 title: "Seurat_protocol_2"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -74,40 +76,60 @@ geneInfoFile <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/geneI
                            quote = "",
                            stringsAsFactors = FALSE)
 
+
+
+
+#only protein coding genes
+geneInfoFile = geneInfoFile[geneInfoFile$gene_biotype == "protein_coding",] 
+
+#only genes represented with one unique ensembl ID
+
+tmp = data.frame(table(geneInfoFile$external_gene_name))
+tmp = tmp[tmp$Freq ==1, ]
+geneInfoFile = geneInfoFile[geneInfoFile$external_gene_name %in% tmp$Var1, ]
+
+
 dim(x=geneInfoFile)
 ```
 
 ## Select relevant columns
 
 ```{r select}
-geneInfoNames = geneInfoFile %>%  select(external_gene_name,Chr)
+geneInfoNames = geneInfoFile %>%  select(Geneid, external_gene_name)
 head(geneInfoNames)
 dim(x=geneInfoNames)
 
-```
+intersect( g2m.genes, geneInfoNames$external_gene_name)
+#intersect( s.genes, rownames(geneInfo))
 
-## Remove Chr with NA
-
-```{r NA}
-geneInfoNames = geneInfoNames[-52747:-58303,]
-head(geneInfoNames)
-dim(geneInfoNames)
 
 ```
+
 
 ## Perform inner join 
 
 ```{r innerJoin}
-geneInfo = inner_join(geneInfoNames, feature_counts_SC, by = c("external_gene_name" = "Geneid"))
+geneInfo = inner_join(geneInfoNames, feature_counts_SC)
+intersect( g2m.genes, geneInfo$external_gene_name)
+
 dim(x=geneInfo)
 ```
 
 ## Set rownames to correct gene names
 
 ```{r rownames}
-rownames(geneInfo) =  make.names(geneInfo$Chr, unique =TRUE)
+#test = data.frame(make.names(geneInfo$Chr, unique =TRUE)
+#length(test)
+
+
+
+rownames(geneInfo) =  geneInfo$external_gene_name
+
+
+
 dim(x=geneInfo)
 head(x = colnames(x = geneInfo))
+
 ```
 
 ## Remove columns in order to perform rowSums
@@ -116,15 +138,21 @@ head(x = colnames(x = geneInfo))
 geneInfo= geneInfo[,-1:-2]
 dim(geneInfo)
 head(x = colnames(x = geneInfo))
+
+intersect( g2m.genes, rownames(geneInfo))
+
 ```
 
 ## Remove genes that are not expressed
 
 ```{r expressed}
 #rowSums(geneInfo)
-keep <- rowSums(geneInfo>1)
+keep <- rowSums(geneInfo)>1
 geneInfo <- geneInfo[keep,]
 dim(geneInfo)
+
+intersect( g2m.genes, rownames(geneInfo))
+
 ```
 
 ## Create a Seurat object out of the table
@@ -133,16 +161,26 @@ dim(geneInfo)
 feature_counts_seurat <- CreateSeuratObject(counts = geneInfo, min.cells = 3)
 feature_counts_seurat
 feature_counts_seurat <- NormalizeData(object = feature_counts_seurat)
-feature_counts_seurat <- FindVariableFeatures(object = feature_counts_seurat, selection.method = "vst", mean.function = ExpMean, 
-                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
-                           x.high.cutoff = 10, y.cutoff = 0.5)
+feature_counts_seurat <- FindVariableFeatures(object = feature_counts_seurat, selection.method = "vst")
 feature_counts_seurat <- ScaleData(feature_counts_seurat, features = rownames(feature_counts_seurat))
-feature_counts_seurat <- RunPCA(object = feature_counts_seurat, pc.genes = feature_counts_seurat@var.genes, do.print = FALSE)
-feature_counts_seurat
+
+feature_counts_seurat <- RunPCA(object = feature_counts_seurat)
 DimHeatmap(feature_counts_seurat)
 ```
 
 ## Assign cell-cycle scores
+
 ```{r Scoring}
-#feature_counts_seurat <- CellCycleScoring(object = feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes)
+s.genes
+
+intersect( g2m.genes, rownames(geneInfo$external_gene_name))
+intersect( s.genes, rownames(geneInfo))
+
+feature_counts_seurat <- CellCycleScoring(feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+feature_counts_seurat@meta.data
+RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
+feature_counts_seurat <- RunPCA(feature_counts_seurat, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat)
+
 ```
