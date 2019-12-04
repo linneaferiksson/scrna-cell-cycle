@@ -1,5 +1,5 @@
 ---
-title: "Seurat_protocol_Anna"
+title: "Seurat_protocol_4"
 output:
   html_document: default
   pdf_document: default
@@ -93,6 +93,7 @@ dim(x=geneInfoFile)
 ## Select relevant columns
 
 ```{r select}
+
 geneInfoNames = geneInfoFile %>%  select(Geneid, external_gene_name)
 head(geneInfoNames)
 dim(x=geneInfoNames)
@@ -100,13 +101,14 @@ dim(x=geneInfoNames)
 intersect( g2m.genes, geneInfoNames$external_gene_name)
 #intersect( s.genes, rownames(geneInfo))
 
-
 ```
 
 
 ## Perform inner join 
 
 ```{r innerJoin}
+
+#Comb and Ref
 geneInfo = inner_join(geneInfoNames, feature_counts_SC)
 intersect( g2m.genes, geneInfo$external_gene_name)
 
@@ -119,8 +121,8 @@ dim(x=geneInfo)
 #test = data.frame(make.names(geneInfo$Chr, unique =TRUE)
 #length(test)
 
+#Comb and Ref
 rownames(geneInfo) =  geneInfo$external_gene_name
-
 dim(x=geneInfo)
 head(x = colnames(x = geneInfo))
 
@@ -149,9 +151,50 @@ intersect( g2m.genes, rownames(geneInfo))
 
 ```
 
+## Separate Comb and Ref
+
+```{r Separate}
+#Comb
+removeIDs <- function(geneInfo) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo)) {
+    if(grepl("Ref", colnames(geneInfo[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb <- removeIDs(geneInfo)
+dim(geneInfo_Comb)
+head(x = colnames(x = geneInfo_Comb))
+
+#Ref
+removeIDs <- function(geneInfo) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo)) {
+    if(grepl("Comb", colnames(geneInfo[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Ref <- removeIDs(geneInfo)
+dim(geneInfo_Ref)
+head(x = colnames(x = geneInfo_Ref))
+```
 ## Create a Seurat object out of the table
 
 ```{r Seurat}
+
+#Comb and Ref
 feature_counts_seurat <- CreateSeuratObject(counts = geneInfo, min.cells = 3)
 feature_counts_seurat
 feature_counts_seurat <- NormalizeData(object = feature_counts_seurat)
@@ -160,11 +203,34 @@ feature_counts_seurat <- ScaleData(feature_counts_seurat, features = rownames(fe
 
 feature_counts_seurat <- RunPCA(object = feature_counts_seurat)
 DimHeatmap(feature_counts_seurat)
+
+# Comb
+feature_counts_seurat_Comb <- CreateSeuratObject(counts = geneInfo_Comb, min.cells = 3)
+feature_counts_seurat_Comb
+feature_counts_seurat_Comb <- NormalizeData(object = feature_counts_seurat_Comb)
+feature_counts_seurat_Comb <- FindVariableFeatures(object = feature_counts_seurat_Comb, selection.method = "vst")
+feature_counts_seurat_Comb <- ScaleData(feature_counts_seurat_Comb, features = rownames(feature_counts_seurat_Comb))
+
+feature_counts_seurat_Comb <- RunPCA(object = feature_counts_seurat_Comb)
+DimHeatmap(feature_counts_seurat_Comb)
+
+#Ref
+feature_counts_seurat_Ref <- CreateSeuratObject(counts = geneInfo_Ref, min.cells = 3)
+feature_counts_seurat_Ref
+feature_counts_seurat_Ref <- NormalizeData(object = feature_counts_seurat_Ref)
+feature_counts_seurat_Ref <- FindVariableFeatures(object = feature_counts_seurat_Ref, selection.method = "vst")
+feature_counts_seurat_Ref <- ScaleData(feature_counts_seurat_Ref, features = rownames(feature_counts_seurat_Ref))
+
+feature_counts_seurat_Ref <- RunPCA(object = feature_counts_seurat_Ref)
+DimHeatmap(feature_counts_seurat_Ref)
+
 ```
 
 ## Assign cell-cycle scores
 
 ```{r Scoring}
+
+#Comb and Ref
 s.genes
 
 intersect( g2m.genes, rownames(geneInfo$external_gene_name))
@@ -178,43 +244,27 @@ head(x = colnames(x = feature_counts_seurat))
 feature_counts_seurat <- RunPCA(feature_counts_seurat, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat)
 
-# Save seurat object as file
-#saveRDS(feature_counts_seurat,file="/Users/annaasklof/Desktop/Seurat/S/feature_counts_seurat.rds")
-resultSeurat <- as.data.frame(as.matrix(feature_counts_seurat@meta.data))
-fwrite(x = resultSeurat, row.names = TRUE, col.names =TRUE, file = "/Users/annaasklof/Desktop/Seurat/S/resultSeurat.csv")
-```
-## Assign cell-cycle scores
+# Comb
+intersect( g2m.genes, rownames(geneInfo_Comb$external_gene_name))
+intersect( s.genes, rownames(geneInfo_Comb))
 
-```{r Comparing with the ground truth data}
-correctCCS <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/sampleData.QC.method.tsv", 
-                                  sep = "\t",
-                                  header = TRUE,
-                                  quote = "",
-                                  stringsAsFactors = FALSE)
-dim(x=correctCCS)
-head(x = colnames(x = correctCCS))
+feature_counts_seurat_Comb <- CellCycleScoring(feature_counts_seurat_Comb, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
-#select relevant colums in the correctCCS file
-correctCCS = correctCCS %>%  select(fileName, CellCycle)
+feature_counts_seurat_Comb@meta.data
+head(x = colnames(x = feature_counts_seurat_Comb))
 
-dim(x=correctCCS)
-head(x = colnames(x = correctCCS))
+feature_counts_seurat_Comb <- RunPCA(feature_counts_seurat_Comb, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat_Comb)
 
-# Select relevant colums from feature_counts_seurat
-result_feature_counts <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/resultSeurat.csv", 
-                                  sep = "\t",
-                                  header = TRUE,
-                                  quote = "",
-                                  stringsAsFactors = FALSE)
-dim(x=result_feature_counts)
-head(x = colnames(x = result_feature_counts))
-result_feature_counts
+#Ref
+intersect( g2m.genes, rownames(geneInfo_Ref$external_gene_name))
+intersect( s.genes, rownames(geneInfo_Ref))
 
-#select relevant colums from the result
-#result_feature_counts = result_feature_counts %>%  select(X, Phase)
+feature_counts_seurat_Ref <- CellCycleScoring(feature_counts_seurat_Ref, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
-# Compare the cell cycle state predicted to the ground throuth
-#CellCycleStates = inner_join(sampleData, result_feature_counts) 
-
+feature_counts_seurat_Ref@meta.data
+head(x = colnames(x = feature_counts_seurat_Ref))
+feature_counts_seurat <- RunPCA(feature_counts_seurat_Ref, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat_Ref)
 
 ```
