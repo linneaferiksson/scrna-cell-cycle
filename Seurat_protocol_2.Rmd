@@ -26,7 +26,7 @@ g2m.genes <- cc.genes$g2m.genes
 ## Load the dataset
 
 ```{r load}
-feature_counts.data <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/feature_counts.table.tsv", 
+feature_counts.data <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/feature_counts.table.tsv", 
                                   sep = "\t",
                                   header = TRUE,
                                   quote = "",
@@ -71,7 +71,7 @@ head(x = colnames(x = feature_counts_SC))
 ## Load file for correct gene names
 
 ```{r load2}
-geneInfoFile <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/geneInfo.QC.method.seurat.SCORPIUS.tsv", 
+geneInfoFile <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/geneInfo.QC.method.seurat.SCORPIUS.tsv", 
                            sep = "\t",
                            header = TRUE,
                            quote = "",
@@ -88,17 +88,30 @@ geneInfoFile = geneInfoFile[geneInfoFile$external_gene_name %in% tmp$Var1, ]
 
 
 dim(x=geneInfoFile)
+
+head(geneInfoFile)
 ```
 
 ## Select relevant columns
 
 ```{r select}
-geneInfoNames = geneInfoFile %>%  select(Geneid, external_gene_name)
+
+geneInfoNames = geneInfoFile %>%  select(Geneid,external_gene_name)
+
 head(geneInfoNames)
 dim(x=geneInfoNames)
 
 intersect( g2m.genes, geneInfoNames$external_gene_name)
 #intersect( s.genes, rownames(geneInfo))
+
+
+## Remove Chr with NA
+```
+
+``` {r NA}
+#geneInfoNames = geneInfoNames[-52747:-58303,]
+#head(geneInfoNames)
+#dim(geneInfoNames)
 
 
 ```
@@ -108,7 +121,9 @@ intersect( g2m.genes, geneInfoNames$external_gene_name)
 
 ```{r innerJoin}
 geneInfo = inner_join(geneInfoNames, feature_counts_SC)
+
 intersect( g2m.genes, geneInfo$external_gene_name)
+
 
 dim(x=geneInfo)
 ```
@@ -116,6 +131,9 @@ dim(x=geneInfo)
 ## Set rownames to correct gene names
 
 ```{r rownames}
+
+rownames(geneInfo) =  make.names(geneInfo$external_gene_name, unique =TRUE)
+
 #test = data.frame(make.names(geneInfo$Chr, unique =TRUE)
 #length(test)
 
@@ -140,12 +158,14 @@ intersect( g2m.genes, rownames(geneInfo))
 ## Remove genes that are not expressed
 
 ```{r expressed}
+
 #rowSums(geneInfo)
 keep <- rowSums(geneInfo)>1
 geneInfo <- geneInfo[keep,]
 dim(geneInfo)
 
 intersect( g2m.genes, rownames(geneInfo))
+
 
 ```
 
@@ -158,13 +178,44 @@ feature_counts_seurat <- NormalizeData(object = feature_counts_seurat)
 feature_counts_seurat <- FindVariableFeatures(object = feature_counts_seurat, selection.method = "vst")
 feature_counts_seurat <- ScaleData(feature_counts_seurat, features = rownames(feature_counts_seurat))
 
-feature_counts_seurat <- RunPCA(object = feature_counts_seurat)
+
+feature_counts_seurat <- RunPCA(object = feature_counts_seurat, pc.genes = feature_counts_seurat@var.genes, do.print = FALSE)
+feature_counts_seurat
+#DimHeatmap(feature_counts_seurat)
+
 DimHeatmap(feature_counts_seurat)
+
 ```
 
 ## Assign cell-cycle scores
 
 ```{r Scoring}
+
+feature_counts_seurat <- CellCycleScoring(object = feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes)
+
+
+#class(geneInfoFile)
+
+#geneInfoFile[3,5]
+
+#geneInfo["CFTR",]
+
+
+feature_counts_seurat@meta.data
+
+table(feature_counts_seurat@meta.data$Phase)
+head(feature_counts_seurat[[]])
+feature_counts_seurat@meta.data$Phase
+```
+
+
+``` {r clusterData}
+
+
+
+RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
+
+
 s.genes
 
 intersect( g2m.genes, rownames(geneInfo$external_gene_name))
@@ -173,8 +224,6 @@ intersect( s.genes, rownames(geneInfo))
 feature_counts_seurat <- CellCycleScoring(feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
 feature_counts_seurat@meta.data
-head(x = colnames(x = feature_counts_seurat))
-#RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
 feature_counts_seurat <- RunPCA(feature_counts_seurat, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat)
 
@@ -183,6 +232,7 @@ DimPlot(feature_counts_seurat)
 resultSeurat <- as.data.frame(as.matrix(feature_counts_seurat@meta.data))
 fwrite(x = resultSeurat, row.names = TRUE, col.names =TRUE, file = "/Users/annaasklof/Desktop/Seurat/S/resultSeurat.csv")
 ```
+
 ## Assign cell-cycle scores
 
 ```{r Comparing with the ground truth data}
@@ -218,3 +268,18 @@ result_feature_counts
 
 
 ```
+
+
+``` {r plotSeuratResult}
+VizDimLoadings(feature_counts_seurat, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat, reduction = "pca")
+DimHeatmap(feature_counts_seurat, dims = 1:15, cells = 500, balanced = TRUE)
+
+ElbowPlot(feature_counts_seurat)
+
+feature_counts_seurat <- FindNeighbors(feature_counts_seurat, dims = 1:10)
+feature_counts_seurat <- FindClusters(feature_counts_seurat, resolution = 0.5)
+head(Idents(feature_counts_seurat), 5)
+
+```
+
