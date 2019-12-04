@@ -1,0 +1,269 @@
+---
+title: "Seurat_cyclone_protocol"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load library
+
+```{r library}
+library(dplyr)
+library(Seurat)
+# load data from Seurat package
+#data(cc.genes)
+
+# segregate this list into markers of G2/M phase and markers of S phase
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
+```
+
+## Load the dataset
+
+```{r load}
+feature_counts.data <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/feature_counts.table.tsv", 
+                                  sep = "\t",
+                                  header = TRUE,
+                                  quote = "",
+                                  stringsAsFactors = FALSE)
+dim(x=feature_counts.data)
+head(x = colnames(x = feature_counts.data))
+```
+
+## Remove data that is not sc from dataset
+
+```{r sc}
+removeIDs <- function(feature_counts.data) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(feature_counts.data)) {
+    if(grepl(".dil.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+    if(grepl(".FACS.", colnames(feature_counts.data[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- feature_counts.data[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+feature_counts_SC <- removeIDs(feature_counts.data)
+dim(feature_counts_SC)
+head(x = colnames(x = feature_counts_SC))
+
+```
+
+## Remove columns that are not of interest from dataset
+
+```{r removeColumns}
+feature_counts_SC= feature_counts_SC[,-2:-6]
+dim(feature_counts_SC)
+head(x = colnames(x = feature_counts_SC))
+```
+
+## Load file for correct gene names
+
+```{r load2}
+geneInfoFile <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bioinformatik/scrna-cell-cycle/geneInfo.QC.method.seurat.SCORPIUS.tsv", 
+                           sep = "\t",
+                           header = TRUE,
+                           quote = "",
+                           stringsAsFactors = FALSE)
+
+
+
+
+#only protein coding genes
+geneInfoFile = geneInfoFile[geneInfoFile$gene_biotype == "protein_coding",] 
+
+#only genes represented with one unique ensembl ID
+
+tmp = data.frame(table(geneInfoFile$external_gene_name))
+tmp = tmp[tmp$Freq ==1, ]
+geneInfoFile = geneInfoFile[geneInfoFile$external_gene_name %in% tmp$Var1, ]
+
+
+dim(x=geneInfoFile)
+
+head(geneInfoFile)
+```
+
+## Select relevant columns
+
+```{r select}
+
+geneInfoNames = geneInfoFile %>%  select(Geneid,external_gene_name)
+
+head(geneInfoNames)
+dim(x=geneInfoNames)
+
+intersect( g2m.genes, geneInfoNames$external_gene_name)
+#intersect( s.genes, rownames(geneInfo))
+
+
+## Remove Chr with NA
+```
+
+``` {r NA}
+#geneInfoNames = geneInfoNames[-52747:-58303,]
+#head(geneInfoNames)
+#dim(geneInfoNames)
+
+
+```
+
+
+## Perform inner join 
+
+```{r innerJoin}
+geneInfo = inner_join(geneInfoNames, feature_counts_SC)
+
+intersect( g2m.genes, geneInfo$external_gene_name)
+
+
+dim(x=geneInfo)
+```
+
+## Set rownames to correct gene names
+
+```{r rownames}
+
+rownames(geneInfo) =  make.names(geneInfo$external_gene_name, unique =TRUE)
+
+#test = data.frame(make.names(geneInfo$Chr, unique =TRUE)
+#length(test)
+
+
+
+rownames(geneInfo) =  geneInfo$external_gene_name
+
+
+
+
+dim(x=geneInfo)
+head(x = colnames(x = geneInfo))
+
+```
+
+## Remove columns in order to perform rowSums
+
+```{r removeColumns2}
+geneInfo= geneInfo[,-1:-2]
+dim(geneInfo)
+head(x = colnames(x = geneInfo))
+
+intersect( g2m.genes, rownames(geneInfo))
+
+```
+
+## Remove genes that are not expressed
+
+```{r expressed}
+
+#rowSums(geneInfo)
+keep <- rowSums(geneInfo)>1
+geneInfo <- geneInfo[keep,]
+dim(geneInfo)
+
+intersect( g2m.genes, rownames(geneInfo))
+
+
+```
+
+## Create a Seurat object out of the table
+
+```{r Seurat}
+feature_counts_seurat <- CreateSeuratObject(counts = geneInfo, min.cells = 3)
+feature_counts_seurat
+feature_counts_seurat <- NormalizeData(object = feature_counts_seurat)
+feature_counts_seurat <- FindVariableFeatures(object = feature_counts_seurat, selection.method = "vst")
+feature_counts_seurat <- ScaleData(feature_counts_seurat, features = rownames(feature_counts_seurat))
+
+
+feature_counts_seurat <- RunPCA(object = feature_counts_seurat, pc.genes = feature_counts_seurat@var.genes, do.print = FALSE)
+feature_counts_seurat
+#DimHeatmap(feature_counts_seurat)
+
+DimHeatmap(feature_counts_seurat)
+
+```
+
+## Assign cell-cycle scores
+
+```{r Scoring}
+
+feature_counts_seurat <- CellCycleScoring(object = feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes)
+
+
+#class(geneInfoFile)
+
+#geneInfoFile[3,5]
+
+#geneInfo["CFTR",]
+
+
+feature_counts_seurat@meta.data
+
+table(feature_counts_seurat@meta.data$Phase)
+head(feature_counts_seurat[[]])
+feature_counts_seurat@meta.data$Phase
+```
+
+
+``` {r clusterData}
+
+
+
+RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
+
+
+s.genes
+
+intersect( g2m.genes, rownames(geneInfo$external_gene_name))
+intersect( s.genes, rownames(geneInfo))
+
+feature_counts_seurat <- CellCycleScoring(feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+feature_counts_seurat@meta.data
+RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
+
+feature_counts_seurat <- RunPCA(feature_counts_seurat, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat)
+
+```
+
+``` {r plotSeuratResult}
+VizDimLoadings(feature_counts_seurat, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat, reduction = "pca")
+DimHeatmap(feature_counts_seurat, dims = 1:15, cells = 500, balanced = TRUE)
+
+ElbowPlot(feature_counts_seurat)
+
+feature_counts_seurat <- FindNeighbors(feature_counts_seurat, dims = 1:10)
+feature_counts_seurat <- FindClusters(feature_counts_seurat, resolution = 0.5)
+head(Idents(feature_counts_seurat), 5)
+
+```
+
+``` {r load cyclone}
+
+#Installing cyclone
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+BiocManager::install("scran")
+
+browseVignettes("scran")
+
+#Load in the data file
+
+```
+
+
+
