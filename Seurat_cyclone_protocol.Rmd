@@ -172,6 +172,7 @@ geneInfo <- geneInfo[keep,]
 dim(geneInfo)
 
 intersect( g2m.genes, rownames(geneInfo))
+intersect( s.genes, rownames(geneInfo))
 
 
 ```
@@ -213,6 +214,8 @@ feature_counts_seurat@meta.data
 table(feature_counts_seurat@meta.data$Phase)
 head(feature_counts_seurat[[]])
 feature_counts_seurat@meta.data$Phase
+
+
 ```
 
 
@@ -260,8 +263,28 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 BiocManager::install("scran")
 
 browseVignettes("scran")
+```
 
-#Load in the data file
+``` {r installSingleCellExperiment}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("SingleCellExperiment")
+
+
+```
+
+``` {r testCyclone}
+library(SingleCellExperiment)
+library(scran)
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+
+set.seed(123)
+sce <- SingleCellExperiment (assays = list(counts = geneInfo, logcounts = log2(geneInfo+1)))
+cc <- cyclone(sce, pairs=mmu.pairs )
+
+table(cc$phase)
 
 ```
 
