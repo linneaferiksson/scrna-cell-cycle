@@ -148,6 +148,7 @@ rownames(geneInfo) =  geneInfo$external_gene_name
 
 dim(x=geneInfo)
 head(x = colnames(x = geneInfo))
+head(x = rownames(x = geneInfo))
 
 ```
 
@@ -274,10 +275,20 @@ BiocManager::install("SingleCellExperiment")
 
 ```
 
+## Check row names
+``` {r checkRowNames}
+rownames(feature_counts_SC)
+
+```
+
+## Cyclone
+
 ``` {r testCyclone}
 library(SingleCellExperiment)
 library(scran)
 mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+?cyclone
 
 class(mmu.pairs)
 class(mmu.pairs[[1]])
@@ -287,10 +298,29 @@ for(i in 1:3){
   tempMatrix = as.matrix(temp)
   mmu.pairs[[i]] = tempMatrix
 }
+
+#Change rownames to ensmbl IDs
+#geneInfoEnsmblRownames <- geneInfo
+
+class(mmu.pairs)
+class(mmu.pairs[[1]])
+
+rownames(geneInfo) =  geneInfo$Geneid
+dim(x=geneInfo)
+head(x = colnames(x = geneInfo))
+head(x = rownames(x = geneInfo))
+
 set.seed(123)
 sce <- SingleCellExperiment (assays = list(counts = geneInfo, logcounts = log2(geneInfo+1)))
-cc <- cyclone(sce, pairs=mmu.pairs )
+
+is.recursive(sce)
+is.atomic(sce)
+#is.recursive(mmu.pairs)
+#is.recursive(geneInfo)
+
+cc <- cyclone(sce, pairs=mmu.pairs, gene.names = rownames(geneInfo))
 ?cyclone
+is.recursive(cc)
 
 #Byt rowanmes till ensembl IDs eller ha gene.names som en inparameter
 
