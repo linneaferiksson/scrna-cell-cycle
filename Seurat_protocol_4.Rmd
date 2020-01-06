@@ -179,6 +179,7 @@ head(x = colnames(x = geneInfo))
 geneInfo= geneInfo[,-1:-2]
 dim(geneInfo)
 head(x = colnames(x = geneInfo))
+head(x = rownames(x = geneInfo))
 
 intersect( g2m.genes, rownames(geneInfo))
 ```
@@ -234,6 +235,128 @@ dim(geneInfo_Ref)
 head(x = colnames(x = geneInfo_Ref))
 
 ```
+## Separate Comb_0h 
+
+```{r Separate Comb_0h}
+#Comb.0h
+dim(geneInfo_Comb)
+# Removes 24 h 
+removeIDs <- function(geneInfo_Comb) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb)) {
+    if(grepl("Comb.24", colnames(geneInfo_Comb[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_24removed<- removeIDs(geneInfo_Comb)
+dim(geneInfo_Comb_24removed)
+# Removes 48 h 
+removeIDs <- function(geneInfo_Comb_24removed) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb_24removed)) {
+    if(grepl("Comb.48", colnames(geneInfo_Comb_24removed[i]))){
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb_24removed[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_0h <- removeIDs(geneInfo_Comb_24removed)
+dim(geneInfo_Comb_0h)
+head(x = colnames(x = geneInfo_Comb_0h))
+
+```
+## Separate Comb_24h 
+
+```{r Separate Comb_24h}
+#Comb.0h
+dim(geneInfo_Comb)
+# Removes 0 h 
+removeIDs <- function(geneInfo_Comb) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb)) {
+    if(grepl("Comb.0", colnames(geneInfo_Comb[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_0hremoved<- removeIDs(geneInfo_Comb)
+dim(geneInfo_Comb_0hremoved)
+
+# Removes 48 h 
+removeIDs <- function(geneInfo_Comb_0hremoved) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb_0hremoved)) {
+    if(grepl("Comb.48", colnames(geneInfo_Comb_0hremoved[i]))){
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb_0hremoved[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_24h <- removeIDs(geneInfo_Comb_0hremoved)
+dim(geneInfo_Comb_24h)
+head(x = colnames(x = geneInfo_Comb_24h))
+
+```
+## Separate Comb_48h 
+
+```{r Separate Comb_48h}
+#Comb.0h
+dim(geneInfo_Comb)
+# Removes 0 h 
+removeIDs <- function(geneInfo_Comb) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb)) {
+    if(grepl("Comb.0", colnames(geneInfo_Comb[i]))) {
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_0hremoved<- removeIDs(geneInfo_Comb)
+dim(geneInfo_Comb_0hremoved)
+
+# Removes 24 h 
+removeIDs <- function(geneInfo_Comb_0hremoved) {
+  column_indices_ID <- c()
+  
+  for(i in 1:ncol(geneInfo_Comb_0hremoved)) {
+    if(grepl("Comb.24", colnames(geneInfo_Comb_0hremoved[i]))){
+      column_indices_ID <- c(column_indices_ID, i)
+    }
+  }
+  feature_counts_removedColumns <- c()
+  feature_counts_removedColumns <- geneInfo_Comb_0hremoved[,-column_indices_ID]
+  return(feature_counts_removedColumns)
+}
+
+geneInfo_Comb_48h <- removeIDs(geneInfo_Comb_0hremoved)
+dim(geneInfo_Comb_48h)
+head(x = colnames(x = geneInfo_Comb_48h))
+
+```
 ## Create a Seurat object out of the table
 
 ```{r Seurat}
@@ -258,6 +381,36 @@ feature_counts_seurat_Comb <- ScaleData(feature_counts_seurat_Comb, features = r
 feature_counts_seurat_Comb <- RunPCA(object = feature_counts_seurat_Comb)
 DimHeatmap(feature_counts_seurat_Comb)
 
+# Comb 0h
+feature_counts_seurat_Comb_0h <- CreateSeuratObject(counts = geneInfo_Comb_0h, min.cells = 3)
+feature_counts_seurat_Comb_0h
+feature_counts_seurat_Comb_0h <- NormalizeData(object = feature_counts_seurat_Comb_0h)
+feature_counts_seurat_Comb_0h <- FindVariableFeatures(object = feature_counts_seurat_Comb_0h, selection.method = "vst")
+feature_counts_seurat_Comb_0h <- ScaleData(feature_counts_seurat_Comb_0h, features = rownames(feature_counts_seurat_Comb_0h))
+
+feature_counts_seurat_Comb_0h <- RunPCA(object = feature_counts_seurat_Comb_0h)
+DimHeatmap(feature_counts_seurat_Comb_0h)
+
+# Comb 24h
+feature_counts_seurat_Comb_24h <- CreateSeuratObject(counts = geneInfo_Comb_24h, min.cells = 3)
+feature_counts_seurat_Comb_24h
+feature_counts_seurat_Comb_24h <- NormalizeData(object = feature_counts_seurat_Comb_24h)
+feature_counts_seurat_Comb_24h <- FindVariableFeatures(object = feature_counts_seurat_Comb_24h, selection.method = "vst")
+feature_counts_seurat_Comb_24h <- ScaleData(feature_counts_seurat_Comb_24h, features = rownames(feature_counts_seurat_Comb_24h))
+
+feature_counts_seurat_Comb_24h <- RunPCA(object = feature_counts_seurat_Comb_24h)
+DimHeatmap(feature_counts_seurat_Comb_24h)
+
+# Comb 48h
+feature_counts_seurat_Comb_48h <- CreateSeuratObject(counts = geneInfo_Comb_48h, min.cells = 3)
+feature_counts_seurat_Comb_48h
+feature_counts_seurat_Comb_48h <- NormalizeData(object = feature_counts_seurat_Comb_48h)
+feature_counts_seurat_Comb_48h <- FindVariableFeatures(object = feature_counts_seurat_Comb_48h, selection.method = "vst")
+feature_counts_seurat_Comb_48h <- ScaleData(feature_counts_seurat_Comb_48h, features = rownames(feature_counts_seurat_Comb_48h))
+
+feature_counts_seurat_Comb_48h <- RunPCA(object = feature_counts_seurat_Comb_48h)
+DimHeatmap(feature_counts_seurat_Comb_48h)
+
 #Ref
 feature_counts_seurat_Ref <- CreateSeuratObject(counts = geneInfo_Ref, min.cells = 3)
 feature_counts_seurat_Ref
@@ -269,12 +422,14 @@ feature_counts_seurat_Ref <- RunPCA(object = feature_counts_seurat_Ref)
 DimHeatmap(feature_counts_seurat_Ref)
 
 ```
-
+## Checkning S genes and G2M genes
+```{r Scoring}
+s.genes
+g2m.genes
+```
 ## Assign cell-cycle scores
 
 ```{r Scoring}
-s.genes
-
 #Comb and Ref
 #intersect( g2m.genes, rownames(geneInfo$external_gene_name))
 #intersect( s.genes, rownames(geneInfo))
@@ -293,11 +448,50 @@ intersect( s.genes, rownames(geneInfo_Comb))
 
 feature_counts_seurat_Comb <- CellCycleScoring(feature_counts_seurat_Comb, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
+feature_counts_seurat_Comb$S.Score
+feature_counts_seurat_Comb$G2M.Score
+
 #feature_counts_seurat_Comb@meta.data
 #head(x = colnames(x = feature_counts_seurat_Comb))
 
 feature_counts_seurat_Comb <- RunPCA(feature_counts_seurat_Comb, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat_Comb)
+
+# Comb_0h 
+intersect( g2m.genes, rownames(geneInfo_Comb_0h$external_gene_name))
+intersect( s.genes, rownames(geneInfo_Comb_0h))
+
+feature_counts_seurat_Comb_0h <- CellCycleScoring(feature_counts_seurat_Comb_0h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+feature_counts_seurat_Comb_0h$S.Score
+feature_counts_seurat_Comb_0h$G2M.Score
+
+feature_counts_seurat_Comb_0h <- RunPCA(feature_counts_seurat_Comb_0h, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat_Comb_0h)
+
+# Comb_24h 
+intersect( g2m.genes, rownames(geneInfo_Comb_24h$external_gene_name))
+intersect( s.genes, rownames(geneInfo_Comb_24h))
+
+feature_counts_seurat_Comb_24h <- CellCycleScoring(feature_counts_seurat_Comb_24h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+feature_counts_seurat_Comb_24h$S.Score
+feature_counts_seurat_Comb_24h$G2M.Score
+
+feature_counts_seurat_Comb_24h <- RunPCA(feature_counts_seurat_Comb_24h, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat_Comb_24h)
+
+# Comb_48h 
+intersect( g2m.genes, rownames(geneInfo_Comb_48h$external_gene_name))
+intersect( s.genes, rownames(geneInfo_Comb_48h))
+
+feature_counts_seurat_Comb_48h <- CellCycleScoring(feature_counts_seurat_Comb_48h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+
+feature_counts_seurat_Comb_48h$S.Score
+feature_counts_seurat_Comb_48h$G2M.Score
+
+feature_counts_seurat_Comb_48h <- RunPCA(feature_counts_seurat_Comb_48h, features = c(s.genes, g2m.genes))
+DimPlot(feature_counts_seurat_Comb_48h)
 
 #Ref
 intersect( g2m.genes, rownames(geneInfo_Ref$external_gene_name))
@@ -367,14 +561,46 @@ DimPlot(feature_counts_seurat_Ref, dims = c(4, 5))
 
 ```{r Convert Seuratobject to dataframe}
 #Convert Seuratobject to dataframe
-RefmetaData = feature_counts_seurat_Ref@meta.data
-class(RefmetaData)
-head(RefmetaData)
 
+#Comb
 CombmetaData = feature_counts_seurat_Comb@meta.data
 class(CombmetaData)
 head(CombmetaData)
 
+#Comb_0h
+Comb_0h_metaData = feature_counts_seurat_Comb_0h@meta.data
+class(Comb_0h_metaData)
+head(Comb_0h_metaData)
+
+#Comb_24h
+Comb_24h_metaData = feature_counts_seurat_Comb_24h@meta.data
+class(Comb_24h_metaData)
+head(Comb_24h_metaData)
+
+#Comb_48h
+Comb_48h_metaData = feature_counts_seurat_Comb_48h@meta.data
+class(Comb_48h_metaData)
+head(Comb_48h_metaData)
+
+#Ref
+RefmetaData = feature_counts_seurat_Ref@meta.data
+class(RefmetaData)
+head(RefmetaData)
+
+
+#Count number of genes associated with each phase
+table(feature_counts_seurat_Comb@meta.data$Phase)
+table(feature_counts_seurat_Comb_0h@meta.data$Phase)
+table(feature_counts_seurat_Comb_24h@meta.data$Phase)
+table(feature_counts_seurat_Comb_48h@meta.data$Phase)
+table(feature_counts_seurat_Ref@meta.data$Phase)
+#table(feature_counts_seurat@meta.data$Phase)
+
+#Saving the result as a numeric vector
+Comb_numeric_vec <- as.vector(unlist(lapply(table(feature_counts_seurat_Comb@meta.data$Phase), as.numeric)))
+Ref_numeric_vec <- as.vector(unlist(lapply(table(feature_counts_seurat_Ref@meta.data$Phase), as.numeric)))
+Ref_numeric_vec
+Comb_numeric_vec
 ```
 
 ## Comparing Comb and Ref prediction
