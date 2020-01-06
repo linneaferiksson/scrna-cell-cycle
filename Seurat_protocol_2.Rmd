@@ -14,7 +14,6 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r library}
 library(dplyr)
 library(Seurat)
-library(data.table)
 # load data from Seurat package
 #data(cc.genes)
 
@@ -77,6 +76,9 @@ geneInfoFile <- read.table(file = "/Users/linneaeriksson/Desktop/Tillämpad bio
                            quote = "",
                            stringsAsFactors = FALSE)
 
+
+
+
 #only protein coding genes
 geneInfoFile = geneInfoFile[geneInfoFile$gene_biotype == "protein_coding",] 
 
@@ -137,7 +139,12 @@ rownames(geneInfo) =  make.names(geneInfo$external_gene_name, unique =TRUE)
 #test = data.frame(make.names(geneInfo$Chr, unique =TRUE)
 #length(test)
 
+
+
 rownames(geneInfo) =  geneInfo$external_gene_name
+
+
+
 
 dim(x=geneInfo)
 head(x = colnames(x = geneInfo))
@@ -224,51 +231,12 @@ intersect( s.genes, rownames(geneInfo))
 feature_counts_seurat <- CellCycleScoring(feature_counts_seurat, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
 feature_counts_seurat@meta.data
+RidgePlot(feature_counts_seurat, features = c("PCNA", "TOP2A", "MCM6", "MKI67"), ncol = 2)
+
 feature_counts_seurat <- RunPCA(feature_counts_seurat, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat)
 
-# Save seurat object as file
-#saveRDS(feature_counts_seurat,file="/Users/annaasklof/Desktop/Seurat/S/feature_counts_seurat.rds")
-resultSeurat <- as.data.frame(as.matrix(feature_counts_seurat@meta.data))
-fwrite(x = resultSeurat, row.names = TRUE, col.names =TRUE, file = "/Users/annaasklof/Desktop/Seurat/S/resultSeurat.csv")
 ```
-
-## Assign cell-cycle scores
-
-```{r Comparing with the ground truth data}
-correctCCS <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/sampleData.QC.method.tsv", 
-                                  sep = "\t",
-                                  header = TRUE,
-                                  quote = "",
-                                  stringsAsFactors = FALSE)
-dim(x=correctCCS)
-head(x = colnames(x = correctCCS))
-
-#select relevant colums in the correctCCS file
-correctCCS = correctCCS %>%  select(fileName, CellCycle)
-
-dim(x=correctCCS)
-head(x = colnames(x = correctCCS))
-
-# Select relevant colums from feature_counts_seurat
-result_feature_counts <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/resultSeurat.csv", 
-                                  sep = "\t",
-                                  header = TRUE,
-                                  quote = "",
-                                  stringsAsFactors = FALSE)
-dim(x=result_feature_counts)
-head(x = colnames(x = result_feature_counts))
-result_feature_counts
-
-#select relevant colums from the result
-#result_feature_counts = result_feature_counts %>%  select(X, Phase)
-
-# Compare the cell cycle state predicted to the ground throuth
-#CellCycleStates = inner_join(sampleData, result_feature_counts) 
-
-
-```
-
 
 ``` {r plotSeuratResult}
 VizDimLoadings(feature_counts_seurat, dims = 1:2, reduction = "pca")
@@ -282,4 +250,6 @@ feature_counts_seurat <- FindClusters(feature_counts_seurat, resolution = 0.5)
 head(Idents(feature_counts_seurat), 5)
 
 ```
+
+
 
