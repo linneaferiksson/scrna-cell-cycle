@@ -145,10 +145,10 @@ geneInfoFile <- read.table(file = "/Users/annaasklof/Desktop/Seurat/S/Data/geneI
                            quote = "",
                            stringsAsFactors = FALSE)
 
-# only protein coding genes
+# Keep only protein coding genes
 geneInfoFile = geneInfoFile[geneInfoFile$gene_biotype == "protein_coding",] 
 
-# only genes represented with one unique ensembl ID
+# Keep only genes represented with one unique ensembl ID
 tmp = data.frame(table(geneInfoFile$external_gene_name))
 tmp = tmp[tmp$Freq ==1, ]
 geneInfoFile = geneInfoFile[geneInfoFile$external_gene_name %in% tmp$Var1, ]
@@ -157,12 +157,10 @@ geneInfoFile = geneInfoFile[geneInfoFile$external_gene_name %in% tmp$Var1, ]
 ## Select relevant columns
 
 ```{r select}
+# Create file containing GeneId and the coresponding gene
 geneInfoNames = geneInfoFile %>%  select(Geneid, external_gene_name)
 head(geneInfoNames)
 dim(x=geneInfoNames)
-
-#intersect( g2m.genes, geneInfoNames$external_gene_name)
-#intersect( s.genes, rownames(geneInfo))
 ```
 
 ## Perform inner join 
@@ -403,7 +401,7 @@ feature_counts_seurat_Bulk <- ScaleData(feature_counts_seurat_Bulk, features = r
 ```{r Scoring}
 # Comb_0h 
 intersect( g2m.genes, rownames(geneInfo_Comb_0h$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Comb_0h))
+intersect( s.genes, rownames(geneInfo_Comb_0h$external_gene_name))
 
 feature_counts_seurat_Comb_0h <- CellCycleScoring(feature_counts_seurat_Comb_0h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
@@ -412,7 +410,7 @@ DimPlot(feature_counts_seurat_Comb_0h)
 
 # Comb_24h 
 intersect( g2m.genes, rownames(geneInfo_Comb_24h$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Comb_24h))
+intersect( s.genes, rownames(geneInfo_Comb_24h$external_gene_name))
 
 feature_counts_seurat_Comb_24h <- CellCycleScoring(feature_counts_seurat_Comb_24h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
@@ -421,7 +419,7 @@ DimPlot(feature_counts_seurat_Comb_24h)
 
 # Comb_48h 
 intersect( g2m.genes, rownames(geneInfo_Comb_48h$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Comb_48h))
+intersect( s.genes, rownames(geneInfo_Comb_48h$external_gene_name))
 
 feature_counts_seurat_Comb_48h <- CellCycleScoring(feature_counts_seurat_Comb_48h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
@@ -430,7 +428,7 @@ DimPlot(feature_counts_seurat_Comb_48h)
 
 #Ref
 intersect( g2m.genes, rownames(geneInfo_Ref$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Ref))
+intersect( s.genes, rownames(geneInfo_Ref$external_gene_name))
 
 feature_counts_seurat_Ref <- CellCycleScoring(feature_counts_seurat_Ref, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
@@ -439,13 +437,13 @@ DimPlot(feature_counts_seurat_Ref)
 
 # Dil 
 intersect( g2m.genes, rownames(geneInfo_Dil$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Dil))
+intersect( s.genes, rownames(geneInfo_Dil$external_gene_name))
 
 feature_counts_seurat_Dil <- CellCycleScoring(feature_counts_seurat_Dil, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
 # Bulk 
 intersect( g2m.genes, rownames(geneInfo_Bulk$external_gene_name))
-intersect( s.genes, rownames(geneInfo_Bulk))
+intersect( s.genes, rownames(geneInfo_Bulk$external_gene_name))
 
 feature_counts_seurat_Bulk <- CellCycleScoring(feature_counts_seurat_Bulk, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 ```
@@ -453,7 +451,37 @@ feature_counts_seurat_Bulk <- CellCycleScoring(feature_counts_seurat_Bulk, s.fea
 ## Looking at Seurat results
 
 ``` {r plotSeuratResult}
+# Comb_0h
+VizDimLoadings(feature_counts_seurat_Comb_0h, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat_Comb_0h, reduction = "pca")
+DimHeatmap(feature_counts_seurat_Comb_0h, dims = 1:15, cells = 500, balanced = TRUE)
+ElbowPlot(feature_counts_seurat_Comb_0h)
+feature_counts_seurat_Comb_0h <- FindNeighbors(feature_counts_seurat_Comb_0h, dims = 1:10)
+head(Idents(feature_counts_seurat_Comb_0h), 5)
 
+# Comb_24h
+VizDimLoadings(feature_counts_seurat_Comb_24h, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat_Comb_24h, reduction = "pca")
+DimHeatmap(feature_counts_seurat_Comb_24h, dims = 1:15, cells = 500, balanced = TRUE)
+ElbowPlot(feature_counts_seurat_Comb_24h)
+feature_counts_seurat_Comb_24h <- FindNeighbors(feature_counts_seurat_Comb_24h, dims = 1:10)
+head(Idents(feature_counts_seurat_Comb_24h), 5)
+
+# Comb_48h
+VizDimLoadings(feature_counts_seurat_Comb_48h, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat_Comb_48h, reduction = "pca")
+DimHeatmap(feature_counts_seurat_Comb_48h, dims = 1:15, cells = 500, balanced = TRUE)
+ElbowPlot(feature_counts_seurat_Comb_48h)
+feature_counts_seurat_Comb_48h <- FindNeighbors(feature_counts_seurat_Comb_48h, dims = 1:10)
+head(Idents(feature_counts_seurat_Comb_48h), 5)
+
+# Ref
+VizDimLoadings(feature_counts_seurat_Ref, dims = 1:2, reduction = "pca")
+DimPlot(feature_counts_seurat_Ref, reduction = "pca")
+DimHeatmap(feature_counts_seurat_Ref, dims = 1:15, cells = 500, balanced = TRUE)
+ElbowPlot(feature_counts_seurat_Ref)
+feature_counts_seurat_Ref <- FindNeighbors(feature_counts_seurat_Ref, dims = 1:10)
+head(Idents(feature_counts_seurat_Ref), 5)
 ```
 
 ##Convert Seuratobject to dataframe
@@ -639,10 +667,3 @@ table(cc_Ref$phase)
 table(cc_Dil$phase)
 table(cc_Bulk$phase)
 ``` 
-## Plotta Cycloneresultat
-
-``` {r Plot Cyclone}
-
-``` 
-
-## Korrigera pairs
