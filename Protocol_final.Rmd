@@ -1,9 +1,9 @@
 ---
 title: "Protocol"
 output:
-  html_document: default
-  word_document: default
   pdf_document: default
+  word_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -18,6 +18,10 @@ library(Seurat)
 library(data.table)
 library(SingleCellExperiment)
 library(scran)
+
+# Use Seurat-list of markers of G2/M phase and markers of S phase
+s.genes <- cc.genes$s.genes
+g2m.genes <- cc.genes$g2m.genes
 ```
 
 ## Load the dataset
@@ -397,18 +401,11 @@ feature_counts_seurat_Bulk <- ScaleData(feature_counts_seurat_Bulk, features = r
 ## Assign cell-cycle scores
 
 ```{r Scoring}
-# Use Seurat-list of markers of G2/M phase and markers of S phase
-s.genes <- cc.genes$s.genes
-g2m.genes <- cc.genes$g2m.genes
-
 # Comb_0h 
 intersect( g2m.genes, rownames(geneInfo_Comb_0h$external_gene_name))
 intersect( s.genes, rownames(geneInfo_Comb_0h))
 
 feature_counts_seurat_Comb_0h <- CellCycleScoring(feature_counts_seurat_Comb_0h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
-
-feature_counts_seurat_Comb_0h$S.Score
-feature_counts_seurat_Comb_0h$G2M.Score
 
 feature_counts_seurat_Comb_0h <- RunPCA(feature_counts_seurat_Comb_0h, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat_Comb_0h)
@@ -419,9 +416,6 @@ intersect( s.genes, rownames(geneInfo_Comb_24h))
 
 feature_counts_seurat_Comb_24h <- CellCycleScoring(feature_counts_seurat_Comb_24h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
-feature_counts_seurat_Comb_24h$S.Score
-feature_counts_seurat_Comb_24h$G2M.Score
-
 feature_counts_seurat_Comb_24h <- RunPCA(feature_counts_seurat_Comb_24h, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat_Comb_24h)
 
@@ -430,9 +424,6 @@ intersect( g2m.genes, rownames(geneInfo_Comb_48h$external_gene_name))
 intersect( s.genes, rownames(geneInfo_Comb_48h))
 
 feature_counts_seurat_Comb_48h <- CellCycleScoring(feature_counts_seurat_Comb_48h, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
-
-feature_counts_seurat_Comb_48h$S.Score
-feature_counts_seurat_Comb_48h$G2M.Score
 
 feature_counts_seurat_Comb_48h <- RunPCA(feature_counts_seurat_Comb_48h, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat_Comb_48h)
@@ -443,14 +434,8 @@ intersect( s.genes, rownames(geneInfo_Ref))
 
 feature_counts_seurat_Ref <- CellCycleScoring(feature_counts_seurat_Ref, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
-feature_counts_seurat_Ref@meta.data
-#head(x = colnames(x = feature_counts_seurat_Ref))
 feature_counts_seurat <- RunPCA(feature_counts_seurat_Ref, features = c(s.genes, g2m.genes))
 DimPlot(feature_counts_seurat_Ref)
-
-summary(feature_counts_seurat_Ref)
-
-feature_counts_seurat_Ref@assays$RNA
 
 # Dil 
 intersect( g2m.genes, rownames(geneInfo_Dil$external_gene_name))
@@ -458,23 +443,11 @@ intersect( s.genes, rownames(geneInfo_Dil))
 
 feature_counts_seurat_Dil <- CellCycleScoring(feature_counts_seurat_Dil, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
 
-feature_counts_seurat_Dil@meta.data
-head(x = colnames(x = feature_counts_seurat_Ref))
-
-summary(feature_counts_seurat_Dil)
-feature_counts_seurat_Dil@assays$RNA
-
 # Bulk 
 intersect( g2m.genes, rownames(geneInfo_Bulk$external_gene_name))
 intersect( s.genes, rownames(geneInfo_Bulk))
 
 feature_counts_seurat_Bulk <- CellCycleScoring(feature_counts_seurat_Bulk, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
-
-feature_counts_seurat_Bulk@meta.data
-
-summary(feature_counts_seurat_Bulk)
-
-feature_counts_seurat_Bulk@assays$RNA
 ```
  
 ## Looking at Seurat results
@@ -637,31 +610,33 @@ mmu.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="s
 # Comb_0h
 sce_Comb_0h <- SingleCellExperiment (assays = list(counts = Comb_0h_new, logcounts = log2(Comb_0h_new+1)))
 cc_Comb_0h<- cyclone(sce_Comb_0h, pairs=mmu.pairs, gene.names = rownames(Comb_0h_new))
-table(cc_Comb_0h$phase)
 
 # Comb_24h
 sce_Comb_24h <- SingleCellExperiment (assays = list(counts = Comb_24h_new, logcounts = log2(Comb_24h_new+1)))
 cc_Comb_24h<- cyclone(sce_Comb_24h, pairs=mmu.pairs, gene.names = rownames(Comb_24h_new))
-table(cc_Comb_24h$phase)
 
 # Comb_48h
 sce_Comb_48h <- SingleCellExperiment (assays = list(counts = Comb_48h_new, logcounts = log2(Comb_48h_new+1)))
 cc_Comb_48h<- cyclone(sce_Comb_48h, pairs=mmu.pairs, gene.names = rownames(Comb_48h_new))
-table(cc_Comb_48h$phase)
 
 # Ref
 sce_Ref <- SingleCellExperiment (assays = list(counts = Ref_new, logcounts = log2(Ref_new+1)))
 cc_Ref<- cyclone(sce_Ref, pairs=mmu.pairs, gene.names = rownames(Ref_new))
-table(cc_Ref$phase)
 
 # Dil 
 sce_Dil <- SingleCellExperiment (assays = list(counts = Dil_new, logcounts = log2(Dil_new+1)))
 cc_Dil<- cyclone(sce_Dil, pairs=mmu.pairs, gene.names = rownames(Dil_new))
-table(cc_Dil$phase)
 
 # Bulk
 sce_Bulk <- SingleCellExperiment (assays = list(counts = Bulk_new, logcounts = log2(Bulk_new+1)))
 cc_Bulk<- cyclone(sce_Bulk, pairs=mmu.pairs, gene.names = rownames(Bulk_new))
+
+# Count number of samples associated with each phase
+table(cc_Comb_0h$phase)
+table(cc_Comb_24h$phase)
+table(cc_Comb_48h$phase)
+table(cc_Ref$phase)
+table(cc_Dil$phase)
 table(cc_Bulk$phase)
 ``` 
 ## Plotta Cycloneresultat
