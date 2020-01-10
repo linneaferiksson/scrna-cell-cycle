@@ -633,31 +633,31 @@ sce_Bulk <- SingleCellExperiment (assays = list(counts = Bulk_new, logcounts = l
 ## Run Cyclone
 
 ``` {r Run Cyclone}
-mmu.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
+h.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
 
 # Comb_0h
 sce_Comb_0h <- SingleCellExperiment (assays = list(counts = Comb_0h_new, logcounts = log2(Comb_0h_new+1)))
-cc_Comb_0h<- cyclone(sce_Comb_0h, pairs=mmu.pairs, gene.names = rownames(Comb_0h_new))
+cc_Comb_0h<- cyclone(sce_Comb_0h, pairs=h.pairs, gene.names = rownames(Comb_0h_new))
 
 # Comb_24h
 sce_Comb_24h <- SingleCellExperiment (assays = list(counts = Comb_24h_new, logcounts = log2(Comb_24h_new+1)))
-cc_Comb_24h<- cyclone(sce_Comb_24h, pairs=mmu.pairs, gene.names = rownames(Comb_24h_new))
+cc_Comb_24h<- cyclone(sce_Comb_24h, pairs=h.pairs, gene.names = rownames(Comb_24h_new))
 
 # Comb_48h
 sce_Comb_48h <- SingleCellExperiment (assays = list(counts = Comb_48h_new, logcounts = log2(Comb_48h_new+1)))
-cc_Comb_48h<- cyclone(sce_Comb_48h, pairs=mmu.pairs, gene.names = rownames(Comb_48h_new))
+cc_Comb_48h<- cyclone(sce_Comb_48h, pairs=h.pairs, gene.names = rownames(Comb_48h_new))
 
 # Ref
 sce_Ref <- SingleCellExperiment (assays = list(counts = Ref_new, logcounts = log2(Ref_new+1)))
-cc_Ref<- cyclone(sce_Ref, pairs=mmu.pairs, gene.names = rownames(Ref_new))
+cc_Ref<- cyclone(sce_Ref, pairs=h.pairs, gene.names = rownames(Ref_new))
 
 # Dil 
 sce_Dil <- SingleCellExperiment (assays = list(counts = Dil_new, logcounts = log2(Dil_new+1)))
-cc_Dil<- cyclone(sce_Dil, pairs=mmu.pairs, gene.names = rownames(Dil_new))
+cc_Dil<- cyclone(sce_Dil, pairs=h.pairs, gene.names = rownames(Dil_new))
 
 # Bulk
 sce_Bulk <- SingleCellExperiment (assays = list(counts = Bulk_new, logcounts = log2(Bulk_new+1)))
-cc_Bulk<- cyclone(sce_Bulk, pairs=mmu.pairs, gene.names = rownames(Bulk_new))
+cc_Bulk<- cyclone(sce_Bulk, pairs=h.pairs, gene.names = rownames(Bulk_new))
 
 # Count number of samples associated with each phase
 table(cc_Comb_0h$phase)
